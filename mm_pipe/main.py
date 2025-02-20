@@ -107,16 +107,12 @@ class MattermostClient:
             if channel["name"] == channel_name:
                 return channel["id"], channel["team_id"]
 
-        exit_with_error(f"Channel '{channel_name}' not found or not joined")
-
     def get_user_id(self, username):
         users = self.list_users()
 
         for user in users:
             if user["name"] == username:
                 return user["id"]
-
-        exit_with_error(f"User '{username}' not found")
 
     def get_direct_channel(self, user_id):
         response = self._post("channels/direct", [user_id, self.get_my_user_id()])
@@ -198,6 +194,9 @@ def main():
     channels = client.get_channel_id(args.channel)
     users = client.get_direct_channel(client.get_user_id(args.user))
     channel_id, team_id = channels or users
+
+    if not channel_id:
+        exit_with_error('No channel/user found.')
 
     file_ids = []
     if args.file:
