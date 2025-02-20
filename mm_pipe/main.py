@@ -102,21 +102,23 @@ class MattermostClient:
 
     def get_channel_id(self, channel_name):
         channels = self.list_channels()
-
         for channel in channels:
             if channel["name"] == channel_name:
                 return channel["id"], channel["team_id"]
+        return None, None
 
     def get_user_id(self, username):
         users = self.list_users()
-
         for user in users:
             if user["name"] == username:
                 return user["id"]
 
     def get_direct_channel(self, user_id):
-        response = self._post("channels/direct", [user_id, self.get_my_user_id()])
-        return response["id"], ""
+        my_user_id = self.get_my_user_id()
+        if not user_id:
+            return None, None
+        response = self._post("channels/direct", [user_id, my_user_id])
+        return response["id"], None
 
     def get_my_user_id(self):
         response = self._get("users/me")
@@ -126,18 +128,14 @@ class MattermostClient:
         with open(filepath, 'rb') as f:
             files = {'files': (os.path.basename(filepath), f, 'application/octet-stream')}
             url = f"{self.server_url}/api/v4/files"
-
             response = requests.post(url, headers={'Authorization': f'Bearer {self.token}'}, files=files, data={'channel_id': channel_id})
             response.raise_for_status()
-
             return response.json()
 
     def send_message(self, channel_id, team_id, message, file_ids):
         data = {'channel_id': channel_id, 'message': message, 'team_id': team_id}
-
         if file_ids:
             data['file_ids'] = file_ids
-
         self._post("posts", data)
 
 
@@ -191,10 +189,11 @@ def main():
     if args.channel and args.user:
         exit_with_error("Cannot specify both --channel and --user")
 
-    channels = client.get_channel_id(args.channel)
-    users = client.get_direct_channel(client.get_user_id(args.user))
-    channel_id, team_id = channels or users
-
+    if args.channel:
+        channel_id, team_id = client.get_channel_id(args.channel)
+    else:
+        channel_id, team_id = client.get_direct_channel(client.get_user_id(args.user))
+ 
     if not channel_id:
         exit_with_error('No channel/user found.')
 
