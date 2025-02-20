@@ -35,7 +35,8 @@ function _mm_pipe {
         '--config[Specify the config file]:config:_files' \
         '--server-url[Specify the Mattermost server URL]:server_url' \
         '--token[Specify the Mattermost access token]:token' \
-        '--zsh[Generate Zsh completion script]' \
+        '--zsh[Generate zsh completion script]' \
+        '--bash[Generate bash completion script]' \
         '--help[Show help message]' \
         '--list-channels[List available channels]' \
         '--list-users[List available users]'
