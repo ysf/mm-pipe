@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mm-pipe"
+version = "0.1.0"
+description = "Sending and piping messages or files to Mattermost."
+readme = "README.md"
+license = { text="MIT" }
+
+authors = [
+  { name="ysf", email="ich@youssef.de" }
+]
+
+dependencies = [
+  "whats-that-code>=0.2.0",
+  "requests>=2.0.0"
+]
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/ysf/mm-pipe"
+"Source" = "https://github.com/ysf/mm-pipe"
+
+[project.scripts]
+mm-pipe = "mm_pipe.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+"mm_pipe" = ["completions/*"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["mm_pipe/tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=mm_pipe --cov-report=term-missing"
