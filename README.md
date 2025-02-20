@@ -211,7 +211,7 @@ alias bestfriend="mm-pipe --instance friends --user bestfriend -m"
 # and later in your shell, will
 $ ps aux | grep http | devs
 $ bestfriend "time for lunch?"
-
+```
 
 The tabcompletion on `--instance` will show the instances found in your `~/.mm-pipe.conf` file. On --user and --channel it will show/complete valid users and channels. The fzf completion on CTRL+N will add `| mm-pipe --user username` to the current commandline. This allows sending command outputs directly to mattermost. If the commandline is empty, hence no command has been entered yet, CTRL+N assumes you want to send a message and `mm-pipe --user username -m ""` will be entered into the prompt, with the cursor waiting between the quotes for your message.
 
