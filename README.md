@@ -185,7 +185,6 @@ After installing mm-pipe, add the following to your `~/.bashrc`:
 ```bash
 export MM_PIPE_USE_FZF=1
 # export MM_PIPE_KEYBIND="\\C-n" # CTRL+N is default
-
 source <(mm-pipe --bash)
 ```
 
