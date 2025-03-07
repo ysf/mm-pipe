@@ -6,7 +6,9 @@
 
 - **Send Messages**: Pipe text directly to specific users or channels.
 - **File Sharing**: Upload and share files effortlessly.
-- **Syntax Highlighting**: Automatically apply syntax highlighting to code snippets.
+- **Syntax Highlighting**: Applys syntax highlighting to code snippets.
+- **Binary File Detection**: Upload binary files as attachment.
+- **Message Length Automation**: Upload content as file attachment if it passes specified length limit.
 - **Flexible Configuration**: Supports multiple methods for setting server URL and API token.
 - **User and Channel Listing**: Retrieve and display lists of users and channels.
 - **Instance Selection**: Access different configurations using the `--instance` parameter.
@@ -59,6 +61,7 @@ Create a default configuration file at `~/.mm-pipe.conf`:
 server_url=https://mattermost.yoururl.com
 token=<yourtokenhere>
 auto_highlight=True
+max_message_length=4000
 ```
 
 Replace `https://mattermost.yoururl.com` with your Mattermost server URL and `<yourtokenhere>` with your personal access token.
@@ -169,6 +172,7 @@ mm-pipe --list-channels
 - `--file`: Path to the file to send.
 - `--message`: Directly specify a message.
 - `--highlight`: Apply syntax highlighting (e.g.,`auto`, `python`, `javascript`).
+- `--max-message-length`: Maximum message length before posting message as attachment (default: 4000).
 - `--list-users`: Display a list of all users.
 - `--list-channels`: Display a list of all channels.
 - `--bash`: Output bash completion to source with `source <(mm-pipe --bash)`

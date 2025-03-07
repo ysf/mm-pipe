@@ -31,6 +31,7 @@ function _mm_pipe {
         '--file[Specify the file to send]:file:_files' \
         '--highlight[Specify syntax highlight]:highlight:(auto language no)' \
         '--message[Specify the message to send]:message' \
+        '--max-message-length[Maximum message length before posting message as attachment]:length' \
         '--user[Specify the user to interact with]:user:->users' \
         '--config[Specify the config file]:config:_files' \
         '--server-url[Specify the Mattermost server URL]:server_url' \

@@ -13,6 +13,8 @@ from whats_that_code.election import guess_language_all_methods as glam
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
+DEFAULT_MAX_MESSAGE_LENGTH = 4000
+
 
 def exit_with_error(message):
     logger.error(f"Error: {message}\n")
@@ -36,6 +38,37 @@ def format_with_highlight(content, highlight):
     return f"```{glam(content)}\n{content}\n```"
 
 
+def is_binary(data):
+    try:
+        data.decode('utf-8')
+        return False
+    except UnicodeDecodeError:
+        return True
+
+
+def process_stdin_content(client, channel_id, message, file_ids, highlight, max_length):
+    stdin_bytes = sys.stdin.buffer.read()
+    if not stdin_bytes:
+        return message, file_ids
+
+    if is_binary(stdin_bytes):
+        file_response = client.upload_content(channel_id, stdin_bytes)
+        file_ids.append(file_response['file_infos'][0]['id'])
+        if not message:
+            message = "attaching binary content:\n"
+        return message, file_ids
+
+    content = stdin_bytes.decode('utf-8')
+    formatted_content = format_with_highlight(content, highlight) if highlight != "no" else content
+
+    if len(message + "\n" + formatted_content) > max_length:
+        file_response = client.upload_content(channel_id, stdin_bytes)
+        file_ids.append(file_response['file_infos'][0]['id'])
+        return message, file_ids
+
+    return message + "\n" + formatted_content, file_ids
+
+
 class ConfigManager:
     def __init__(self, config):
         self.config_file = os.path.expanduser(config)
@@ -49,14 +82,15 @@ class ConfigManager:
 
     def get_instance(self, instance_name="default"):
         if instance_name not in self.config:
-            return {"server_url": "", "token": "", "auto_highlight": False}
+            return {"server_url": "", "token": "", "auto_highlight": False, "max_message_length": DEFAULT_MAX_MESSAGE_LENGTH}
 
         instance = self.config[instance_name]
 
         return {
             "server_url": instance.get("server_url", ""),
             "token": instance.get("token", ""),
-            "auto_highlight": instance.getboolean("auto_highlight", False)
+            "auto_highlight": instance.getboolean("auto_highlight", False),
+            "max_message_length": instance.getint("max_message_length", DEFAULT_MAX_MESSAGE_LENGTH)
         }
 
 
@@ -124,13 +158,19 @@ class MattermostClient:
         response = self._get("users/me")
         return response["id"]
 
+    def _upload_api(self, channel_id, file_data, filename):
+        url = f"{self.server_url}/api/v4/files"
+        files = {'files': (filename, file_data, 'application/octet-stream')}
+        response = requests.post(url, headers={'Authorization': f'Bearer {self.token}'}, files=files, data={'channel_id': channel_id})
+        response.raise_for_status()
+        return response.json()
+
     def upload_file(self, channel_id, filepath):
         with open(filepath, 'rb') as f:
-            files = {'files': (os.path.basename(filepath), f, 'application/octet-stream')}
-            url = f"{self.server_url}/api/v4/files"
-            response = requests.post(url, headers={'Authorization': f'Bearer {self.token}'}, files=files, data={'channel_id': channel_id})
-            response.raise_for_status()
-            return response.json()
+            return self._upload_api(channel_id, f, os.path.basename(filepath))
+
+    def upload_content(self, channel_id, content, filename="large-message.txt"):
+        return self._upload_api(channel_id, content, filename)
 
     def send_message(self, channel_id, team_id, message, file_ids):
         data = {'channel_id': channel_id, 'message': message, 'team_id': team_id}
@@ -152,6 +192,7 @@ def main():
     parser.add_argument('--file', '-f', help='Send content of this file')
     parser.add_argument('--message', '-m', nargs='?', default='', help='Message to send (in quotes)')
     parser.add_argument('--highlight', default='auto', nargs='?', const=True, help='Force syntax highlighting with optional language (e.g. --highlight auto|no or -hl python|js etc.)')
+    parser.add_argument('--max-message-length', default=DEFAULT_MAX_MESSAGE_LENGTH, type=int, help='Maximum message length before posting message as attachment')
     parser.add_argument('--zsh', action='store_true', help='Output zsh completion script')
     parser.add_argument('--bash', action='store_true', help='Output bash completion script')
     args = parser.parse_args()
@@ -174,6 +215,7 @@ def main():
 
     server_url = args.server_url or instance['server_url'] or os.environ.get('MM_SERVER_URL')
     token = args.token or instance['token'] or os.environ.get('MM_TOKEN')
+    max_message_length = args.max_message_length or instance['max_message_length']
 
     client = MattermostClient(server_url, token)
 
@@ -193,7 +235,7 @@ def main():
         channel_id, team_id = client.get_channel_id(args.channel)
     else:
         channel_id, team_id = client.get_direct_channel(client.get_user_id(args.user))
- 
+
     if not channel_id:
         exit_with_error('No channel/user found.')
 
@@ -205,11 +247,9 @@ def main():
     message = args.message
 
     if stdin_has_data():
-        content = sys.stdin.read()
-        if content:
-            highlight = args.highlight
-            message += "\n"
-            message += format_with_highlight(content, highlight) if highlight != "no" else content
+        message, file_ids = process_stdin_content(
+            client, channel_id, message, file_ids, args.highlight, max_message_length
+        )
 
     client.send_message(channel_id, team_id, message, file_ids if file_ids else None)
 

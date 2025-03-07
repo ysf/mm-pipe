@@ -4,7 +4,7 @@ _mm_pipe() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    opts="--instance --channel --file --highlight --message --user --config --server-url --token --help --list-channels --list-users --zsh --bash"
+    opts="--instance --channel --file --highlight --message --max-message-length --user --config --server-url --token --help --list-channels --list-users --zsh --bash"
 
     case "${prev}" in
         --instance)
