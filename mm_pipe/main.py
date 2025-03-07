@@ -7,6 +7,7 @@ import os
 import requests
 import sys
 import select
+import subprocess
 
 from whats_that_code.election import guess_language_all_methods as glam
 
@@ -82,13 +83,14 @@ class ConfigManager:
 
     def get_instance(self, instance_name="default"):
         if instance_name not in self.config:
-            return {"server_url": "", "token": "", "auto_highlight": False, "max_message_length": DEFAULT_MAX_MESSAGE_LENGTH}
+            return {"server_url": "", "token": "", "tokencmd": "", "auto_highlight": False, "max_message_length": DEFAULT_MAX_MESSAGE_LENGTH}
 
         instance = self.config[instance_name]
 
         return {
             "server_url": instance.get("server_url", ""),
             "token": instance.get("token", ""),
+            "tokencmd": instance.get("tokencmd", ""),
             "auto_highlight": instance.getboolean("auto_highlight", False),
             "max_message_length": instance.getint("max_message_length", DEFAULT_MAX_MESSAGE_LENGTH)
         }
@@ -214,7 +216,19 @@ def main():
     instance = config_manager.get_instance(args.instance)
 
     server_url = args.server_url or instance['server_url'] or os.environ.get('MM_SERVER_URL')
-    token = args.token or instance['token'] or os.environ.get('MM_TOKEN')
+    
+    # Get token with priority: CLI arg > config token > tokencmd > environment variable
+    token = args.token
+    if not token and instance['tokencmd']:
+        try:
+            # Execute the tokencmd and get the output as the token
+            token = subprocess.check_output(instance['tokencmd'], shell=True).decode('utf-8').strip()
+        except subprocess.SubprocessError as e:
+            logger.error(f"Error executing tokencmd: {e}")
+    
+    if not token:
+        token = instance['token'] or os.environ.get('MM_TOKEN')
+    
     max_message_length = args.max_message_length or instance['max_message_length']
 
     client = MattermostClient(server_url, token)

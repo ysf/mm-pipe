@@ -58,13 +58,33 @@ Create a default configuration file at `~/.mm-pipe.conf`:
 
 ```ini
 [default]
-server_url=https://mattermost.yoururl.com
+server_url=https://mattermost.default.com
 token=<yourtokenhere>
+# tokencmd=secret-tool lookup mattermost token
 auto_highlight=True
 max_message_length=4000
 ```
 
-Replace `https://mattermost.yoururl.com` with your Mattermost server URL and `<yourtokenhere>` with your personal access token.
+Replace `https://mattermost.default.com` with your Mattermost server URL and `<yourtokenhere>` with your personal access token.
+
+**Using tokencmd for Secure Token Storage**
+
+You can use the `tokencmd` option (inspired by [Matterhorn](https://github.com/matterhorn-chat/matterhorn)) to retrieve your token from a password manager / secure storage:
+
+```ini
+[default]
+server_url=https://mattermost.default.com
+tokencmd=secret-tool lookup mattermost token
+```
+
+When mm-pipe runs, it will execute the command specified in `tokencmd` and use its output as the token. This keeps your token out of plain text configuration files.
+
+Token retrieval priority is:
+1. Command line argument (--token)
+2. Configuration file token
+3. tokencmd output
+4. Environment variable (MM_TOKEN)
+
 
 **Using Multiple Instances:**
 
