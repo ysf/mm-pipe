@@ -27,9 +27,6 @@ def stdin_has_data():
 
 
 def format_with_highlight(content, highlight):
-    if not content.strip():
-        exit_with_error("Error: Empty content provided")
-
     if highlight == "no":
         return content
 
@@ -60,6 +57,10 @@ def process_stdin_content(client, channel_id, message, file_ids, highlight, max_
         return message, file_ids
 
     content = stdin_bytes.decode('utf-8')
+
+    if not content.strip():
+        return "", file_ids
+
     formatted_content = format_with_highlight(content, highlight) if highlight != "no" else content
 
     if len(message + "\n" + formatted_content) > max_length:
@@ -181,9 +182,17 @@ class MattermostClient:
         self._post("posts", data)
 
 
+def get_default_config_path():
+    xdg_config_home = os.environ.get('XDG_CONFIG_HOME')
+    if xdg_config_home and os.path.isdir(xdg_config_home):
+        return os.path.join(xdg_config_home, 'mm-pipe.conf')
+    return os.path.join(os.path.expanduser('~'), '.config', 'mm-pipe.conf')
+
+
 def main():
     parser = argparse.ArgumentParser(description='Send or pipe messages to Mattermost')
-    parser.add_argument('--config', default='~/.mm-pipe.conf', help='Path to config file (default: ~/.mm-pipe.conf)')
+    default_config_path = get_default_config_path()
+    parser.add_argument('--config', default=default_config_path, help=f'Path to config file (default: {default_config_path})')
     parser.add_argument('--instance', default='default', help='Configuration instance to use')
     parser.add_argument('--server-url', help='Mattermost server URL (overrides config)')
     parser.add_argument('--token', help='Mattermost access token (overrides config)')
@@ -264,6 +273,9 @@ def main():
         message, file_ids = process_stdin_content(
             client, channel_id, message, file_ids, args.highlight, max_message_length
         )
+
+    if not message and not file_ids:
+        exit_with_error("No message or file to send")
 
     client.send_message(channel_id, team_id, message, file_ids if file_ids else None)
 
